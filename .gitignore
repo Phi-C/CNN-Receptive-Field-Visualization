@@ -1,0 +1,9 @@
+# ignore python compile files
+__pycache__/
+*.pyc
+*.pyo
+
+# ignore egg-info directory
+*.egg-info/
+dist/
+build/
