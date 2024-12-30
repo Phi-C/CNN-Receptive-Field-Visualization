@@ -51,6 +51,6 @@ print(model)
 # 随机生成输入张量
 input_tensor = torch.randn(1, 3, 32, 32)
 
-with CatchEachOp(verbose=False):
+with CatchEachOp(verbose=True):
     # 前向传播
     output = model(input_tensor)
