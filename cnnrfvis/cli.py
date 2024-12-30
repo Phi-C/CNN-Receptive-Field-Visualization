@@ -6,9 +6,7 @@ from cnnrfvis.core import process_module_file
 def parse_arguments():
     parser = argparse.ArgumentParser(description="CNNRFVis command line tool")
 
-    parser.add_argument('--model_file',
-                        type=str,
-                        help="Path to the model file")
+    parser.add_argument('--model_file', type=str, help="Path to the model file")
     parser.add_argument('--conv_file', type=str, help="Path to the conv file")
     parser.add_argument('--layer_idx',
                         type=int,

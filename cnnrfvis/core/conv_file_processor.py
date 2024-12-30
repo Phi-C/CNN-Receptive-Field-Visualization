@@ -8,6 +8,7 @@ class ConvRFVis:
     """
     Receptive Field Visualizer Based on Conv OP params
     """
+
     def __init__(self, file_path: str = None, layer_idx: int = None) -> None:
         self.file_path = file_path
         self.layer_idx = layer_idx
