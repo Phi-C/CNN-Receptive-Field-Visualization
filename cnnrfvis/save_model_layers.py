@@ -13,26 +13,35 @@ import sys
 import subprocess
 import pickle
 from collections import defaultdict
-
+from cnnrfvis.models.SimpleCNN import get_model_rf_info
 
 def save_model_and_layers(model_file: str) -> None:
+    vis_info = {}
     model_layers_dict = defaultdict(list)
 
     model_name = model_file.split("/")[-1].split(".")[0]
     print(f"Model name: {model_name}")
-    results = subprocess.run(
-        ["python3", f"{model_file}"], capture_output=True, text=True
-    )
-    output_lines = results.stdout.splitlines()
-    for line in output_lines:
-        if "Operation" in line:
-            layer_name = line.split("-")[-1].split(" ")[-1].strip()
-            if layer_name == "aten::view":
-                break
-            model_layers_dict[model_name].append(layer_name)
+    # results = subprocess.run(
+    #     ["python3", f"{model_file}"], capture_output=True, text=True
+    # )
+    results = get_model_rf_info()
+    for k, v in results.rf_dict.items():
+        model_layers_dict[model_name].append(k)
+    # import pdb; pdb.set_trace()
+    # output_lines = results.stdout.splitlines()
+    # for line in output_lines:
+    #     if "Operation" in line:
+    #         layer_name = line.split("-")[-1].split(" ")[-1].strip()
+    #         if layer_name == "aten::view":
+    #             break
+    #         model_layers_dict[model_name].append(layer_name)
 
-    with open("model_layers_dict.pkl", "wb") as f:
-        pickle.dump(model_layers_dict, f)
+    vis_info["model_layers_dict"] = model_layers_dict
+    vis_info["rf_dict"] = results.rf_dict
+    vis_info["hw_dict"] = results.hw_dict
+    vis_info["input_hw"] = [results.input_height, results.input_width]
+    with open("vis_info.pkl", "wb") as f:
+        pickle.dump(vis_info, f)
 
 
 if __name__ == "__main__":

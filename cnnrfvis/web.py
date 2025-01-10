@@ -1,20 +1,37 @@
 import streamlit as st
 import json
 import pickle
+import torch
 
 # 定义模型和对应的层列表
-with open("model_layers_dict.pkl", "rb") as f:
-    MODEL_LAYERS = pickle.load(f)
+with open("vis_info.pkl", "rb") as f:
+    vis_info = pickle.load(f)
+    
+MODEL_LAYERS = vis_info["model_layers_dict"]
+RF_DICT = vis_info["rf_dict"]
+HW_DICT = vis_info["hw_dict"]
+input_height, input_width = vis_info["input_hw"]
+# print(f"input_height: {input_height}, input_width: {input_width}")
+# print(len(RF_DICT.keys()))
+# import pdb; pdb.set_trace()
 
 
 # TODO: 实现自定义的 mapping 函数
-def mapping(row, col):
-    return [
-        f"cell2_{row}_{col}",  # 当前单元格
-        f"cell2_{row}_{col+1}",  # 右侧单元格
-        f"cell2_{row+1}_{col}",  # 下方单元格
-        f"cell2_{row+1}_{col+1}",  # 右下单元格
-    ]
+def mapping(row, col, feat_width, index_dict):
+    feat_idx = row * feat_width + col
+    if feat_idx not in index_dict:
+        print(f"feat_idx {feat_idx} not found in index_dict")  # 调试信息
+        return []
+    rf_tensor = index_dict[feat_idx]
+    indices = torch.nonzero(rf_tensor).tolist()
+    print(indices)
+    return [f"cell2_{i}_{j}" for i, j in indices]
+    # return [
+    #     f"cell2_{row}_{col}",  # 当前单元格
+    #     f"cell2_{row}_{col+1}",  # 右侧单元格
+    #     f"cell2_{row+1}_{col}",  # 下方单元格
+    #     f"cell2_{row+1}_{col+1}",  # 右下单元格
+    # ]
 
 
 # Streamlit 界面
@@ -29,8 +46,8 @@ else:
 
 if st.button("Visualize Receptive Field"):
     if model_name and layer_name:
-        feat_height, feat_width = 5, 10  # 第一个表格的大小
-        input_height, input_width = 32, 32  # 第二个表格的大小
+        feat_height, feat_width = HW_DICT[layer_name]
+        index_dict = RF_DICT[layer_name]
 
         # 将所有 HTML 和 JavaScript 放在同一个 st.components.v1.html 调用中
         html_content = """
@@ -64,7 +81,7 @@ if st.button("Visualize Receptive Field"):
 
         # 将 mapping 函数的逻辑转换为 JavaScript 可用的格式
         mapping_js = {
-            f"{i}_{j}": mapping(i, j)
+            f"{i}_{j}": mapping(i, j, feat_width, index_dict)
             for i in range(feat_height)
             for j in range(feat_width)
         }

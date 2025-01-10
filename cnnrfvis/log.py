@@ -16,8 +16,8 @@ def setup_logging(log_file="app.log", log_level=logging.INFO):
         format="%(asctime)s - %(levelname)s - %(message)s",  # 日志格式
         handlers=[
             logging.StreamHandler(sys.stdout),  # 输出到标准输出
-            logging.StreamHandler(),  # 输出到标准错误
-            logging.FileHandler(log_file),  # 输出到文件
+            # logging.StreamHandler(),  # 输出到标准错误
+            # logging.FileHandler(log_file),  # 输出到文件
         ],
     )
 

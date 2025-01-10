@@ -1,6 +1,6 @@
 import torch
 from torch.utils._python_dispatch import TorchDispatchMode
-from cnnrfvis.logging import logger, setup_logging
+from cnnrfvis.log import logger, setup_logging
 from cnnrfvis.ops.factory import HandleFactory
 
 setup_logging(log_file="app.log")
@@ -20,7 +20,14 @@ class CatchEachOp(TorchDispatchMode):
         self.verbose = verbose
         self.flag = True
         self.layer_idx = 0
+        self.rf_dict = {}
+        self.hw_dict = {}
+        self.input_height = 0
+        self.input_width = 0
         self.handlers = HandleFactory().get_handlers()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return super().__exit__(exc_type, exc_val, exc_tb)
 
     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
         """Intercept and process PyTorch operations
@@ -35,7 +42,7 @@ class CatchEachOp(TorchDispatchMode):
             The output result of the operation
         """
         op_name = func._schema.name
-        logger.info(f"Operation: {op_name}")
+        logger.info(f"Operation: {op_name}::{self.layer_idx}")
         output = func(*args, **(kwargs or {}))
 
         if self.flag == False:
@@ -49,11 +56,14 @@ class CatchEachOp(TorchDispatchMode):
             input_tensor = args[0][0] if isinstance(args[0], tuple) else args[0]
             output_tensor = output[0] if isinstance(output, tuple) else output
             output_tensor.rf_dict = input_tensor.rf_dict
+            self.layer_idx += 1
             return output
 
         if self.layer_idx == 0:
             input_tensor = args[0]
             input_height, input_width = input_tensor.shape[-2:]
+            self.input_height = input_height
+            self.input_width = input_width
             input_rf_dict = {}
             for i in range(input_height):
                 for j in range(input_width):
@@ -68,14 +78,14 @@ class CatchEachOp(TorchDispatchMode):
             raise NotImplementedError(f"Operation {op_name} not supported")
         index_mapping = self.handlers[op_name].handle(args, output)
         rf_dict = self._compute_rf_tensor(args, index_mapping)
+        self.rf_dict[f"{op_name}::{self.layer_idx}"] = rf_dict
         output = self._update_output(op_name, output, rf_dict)
+        output_tensor = output[0] if isinstance(output, tuple) else output
+        output_height, output_width = output_tensor.shape[-2:]
+        self.hw_dict[f"{op_name}::{self.layer_idx}"] = (output_height, output_width)
         self.layer_idx += 1
 
         if self.verbose:
-            output_tensor = output
-            if isinstance(output, tuple):
-                output_tensor = output[0]
-            output_height, output_width = output_tensor.shape[-2:]
             middel_index = output_height // 2 * output_width + output_width // 2
             first_row, last_row, first_col, last_col = self._find_nonzero_bounds(
                 output_tensor.rf_dict[middel_index]
