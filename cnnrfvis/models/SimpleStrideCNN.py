@@ -52,13 +52,20 @@ class CustomCNN(nn.Module):
         return x
 
 
-# 实例化模型
-model = CustomCNN(num_classes=10)
-print(model)
+def get_simple_stride_cnn_rf_info():
+    # 实例化模型
+    model = CustomCNN(num_classes=10)
+ 
+    # 随机生成输入张量
+    input_tensor = torch.randn(1, 3, 32, 32)
 
-# 随机生成输入张量
-input_tensor = torch.randn(1, 3, 32, 32)
+    with CatchEachOp(verbose=False) as results, torch.no_grad():
+        # 前向传播
+        model(input_tensor)
+    
+    return results
 
-with CatchEachOp(verbose=True):
-    # 前向传播
-    output = model(input_tensor)
+if __name__ == "__main__":
+    results = get_simple_stride_cnn_rf_info()
+    print(type(results.rf_dict))
+    print("Done!")
