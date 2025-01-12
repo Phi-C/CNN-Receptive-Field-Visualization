@@ -15,25 +15,37 @@ class MaxPoolHandler(OpHandler):
         stride_height, stride_width = args[2]
         input_height, input_width = input_tensor.shape[-2:]
         output_height, output_width = output[0].shape[-2:]
+        padding_height, padding_height = 0, 0
+
+        if len(args) >= 4:
+            padding_height, padding_width = args[3]
 
         assert (
-            input_height
-            == output_height * stride_height + kernel_height - stride_height
+            output_height
+            == (input_height + 2 * padding_height - kernel_height) // stride_height + 1
         ), f"MaxPool height mismatch: {input_height}, {output_height}, {stride_height}, {kernel_height}"
         assert (
-            input_width == output_width * stride_width + kernel_width - stride_width
+            output_width
+            == (input_width + 2 * padding_width - kernel_width) // stride_width + 1
         ), f"MaxPool width mismatch: {input_width}, {output_width}, {stride_width}, {kernel_width}"
 
         mapping = {}
         for h_out in range(output_height):
             for w_out in range(output_width):
-                h_start = h_out * stride_height
-                w_start = w_out * stride_width
+                h_padded_start = h_out * stride_height
+                w_padded_start = w_out * stride_width
+                h_start = h_padded_start - padding_height
+                w_start = w_padded_start - padding_width
+
                 output_index = h_out * output_width + w_out
                 input_indices = []
                 for kh in range(kernel_height):
-                    for kw in range(kernel_width):
-                        index = (h_start + kh) * input_width + (w_start + kw)
-                        input_indices.append(index)
+                    h_in = h_start + kh
+                    if 0 <= h_in < input_height:
+                        for kw in range(kernel_width):
+                            w_in = w_start + kw
+                            if 0 <= w_in < output_width:
+                                index = (h_start + kh) * input_width + (w_start + kw)
+                                input_indices.append(index)
                 mapping[output_index] = input_indices
         return mapping
