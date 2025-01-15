@@ -4,16 +4,12 @@ import pickle
 import torch
 
 # 定义模型和对应的层列表
-with open("vis_info.pkl", "rb") as f:
-    vis_info = pickle.load(f)
+with open("meta_info.pkl", "rb") as f:
+    meta_info = pickle.load(f)
     
-MODEL_LAYERS = vis_info["model_layers_dict"]
-RF_DICT = vis_info["rf_dict"]
-HW_DICT = vis_info["hw_dict"]
-input_height, input_width = vis_info["input_hw"]
-# print(f"input_height: {input_height}, input_width: {input_width}")
-# print(len(RF_DICT.keys()))
-# import pdb; pdb.set_trace()
+MODEL_LAYERS = meta_info["model_layers_dict"]
+HW_DICT = meta_info["hw_dict"]
+input_height, input_width = meta_info["input_hw"]
 
 
 # TODO: 实现自定义的 mapping 函数
@@ -24,14 +20,7 @@ def mapping(row, col, feat_width, index_dict):
         return []
     rf_tensor = index_dict[feat_idx]
     indices = torch.nonzero(rf_tensor).tolist()
-    print(indices)
     return [f"cell2_{i}_{j}" for i, j in indices]
-    # return [
-    #     f"cell2_{row}_{col}",  # 当前单元格
-    #     f"cell2_{row}_{col+1}",  # 右侧单元格
-    #     f"cell2_{row+1}_{col}",  # 下方单元格
-    #     f"cell2_{row+1}_{col+1}",  # 右下单元格
-    # ]
 
 
 # Streamlit 界面
@@ -47,7 +36,8 @@ else:
 if st.button("Visualize Receptive Field"):
     if model_name and layer_name:
         feat_height, feat_width = HW_DICT[layer_name]
-        index_dict = RF_DICT[layer_name]
+        with open(f"{model_name}/{layer_name}.pkl", "rb") as f:
+            index_dict = pickle.load(f)
 
         # 将所有 HTML 和 JavaScript 放在同一个 st.components.v1.html 调用中
         html_content = """

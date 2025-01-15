@@ -10,38 +10,42 @@ Usage:
     $ python save_model_layers.py ../tests/SimpleCNN.py
 """
 import sys
-import subprocess
+import os
 import pickle
 from collections import defaultdict
 from cnnrfvis.models.SimpleCNN import get_model_rf_info
+from cnnrfvis.models.SimpleStrideCNN import get_simple_stride_cnn_rf_info
+from cnnrfvis.models.resnet import get_resnet18_rf_info
+
+FUNC_DICT = {
+    "SimpleCNN": get_model_rf_info,
+    "SimpleStrideCNN": get_simple_stride_cnn_rf_info,
+    # TODO: for resnet18, vis_info.pickle is 19G, which is out of streamlit web‘s ability
+    "resnet": get_resnet18_rf_info,
+}
+
 
 def save_model_and_layers(model_file: str) -> None:
-    vis_info = {}
+    meta_info = {}
+    rf_info = {}
     model_layers_dict = defaultdict(list)
 
     model_name = model_file.split("/")[-1].split(".")[0]
     print(f"Model name: {model_name}")
-    # results = subprocess.run(
-    #     ["python3", f"{model_file}"], capture_output=True, text=True
-    # )
-    results = get_model_rf_info()
+    results = FUNC_DICT[model_name]()
     for k, v in results.rf_dict.items():
         model_layers_dict[model_name].append(k)
-    # import pdb; pdb.set_trace()
-    # output_lines = results.stdout.splitlines()
-    # for line in output_lines:
-    #     if "Operation" in line:
-    #         layer_name = line.split("-")[-1].split(" ")[-1].strip()
-    #         if layer_name == "aten::view":
-    #             break
-    #         model_layers_dict[model_name].append(layer_name)
 
-    vis_info["model_layers_dict"] = model_layers_dict
-    vis_info["rf_dict"] = results.rf_dict
-    vis_info["hw_dict"] = results.hw_dict
-    vis_info["input_hw"] = [results.input_height, results.input_width]
-    with open("vis_info.pkl", "wb") as f:
-        pickle.dump(vis_info, f)
+    meta_info["model_layers_dict"] = model_layers_dict
+    # vis_info["rf_dict"] = results.rf_dict
+    meta_info["hw_dict"] = results.hw_dict
+    meta_info["input_hw"] = [results.input_height, results.input_width]
+    os.system(f"mkdir -p {model_name}")
+    with open(f"meta_info.pkl", "wb") as f:
+        pickle.dump(meta_info, f)
+    for key, value in results.rf_dict.items():
+        with open(f"{model_name}/{key}.pkl", "wb") as f:
+            pickle.dump(value, f)
 
 
 if __name__ == "__main__":

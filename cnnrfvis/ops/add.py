@@ -10,8 +10,8 @@ class AddHandler(OpHandler):
         return cls._instance
 
     def handle(self, args, output):
-        input_tensor_1 = args[0][0] if isinstance(input_tensor_1, tuple) else args[0]
-        input_tensor_2 = args[1][0] if isinstance(input_tensor_2, tuple) else args[1]
+        input_tensor_1 = args[0][0] if isinstance(args[0], tuple) else args[0]
+        input_tensor_2 = args[1][0] if isinstance(args[1], tuple) else args[1]
 
         # FIXME: Add broadcast support
         assert (

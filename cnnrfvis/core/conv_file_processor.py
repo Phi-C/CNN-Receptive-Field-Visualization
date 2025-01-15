@@ -25,27 +25,25 @@ class ConvRFVis:
 
         for idx in range(self.layer_idx + 1):
             conv_info = lines[idx]
-            kernel, stride, pad = conv_info.strip().split('\t')
-            print(
-                f"layer_idx: {idx}\tkernel: {kernel}\t stride: {stride}\tpad: {pad}"
-            )
-            kernel_h, kernel_w = kernel[1:-1].split(',')
+            kernel, stride, pad = conv_info.strip().split("\t")
+            print(f"layer_idx: {idx}\tkernel: {kernel}\t stride: {stride}\tpad: {pad}")
+            kernel_h, kernel_w = kernel[1:-1].split(",")
             kernel_h, kernel_w = int(kernel_h), int(kernel_w)
             print(f"kernel_h: {kernel_h}, kernel_w: {kernel_w}")
-            print(
-                f"type(kernel_h): {type(kernel_h)}, type(kernel_w): {type(kernel_w)}"
-            )
+            print(f"type(kernel_h): {type(kernel_h)}, type(kernel_w): {type(kernel_w)}")
             if idx == 0:
                 self.template = np.ones((kernel_h, kernel_w))
             else:
                 self.template += 1
-                self.template = np.pad(self.template,
-                                       pad_width=((int(kernel_h / 2),
-                                                   int(kernel_h / 2)),
-                                                  (int(kernel_w / 2),
-                                                   int(kernel_w / 2))),
-                                       mode='constant',
-                                       constant_values=1)
+                self.template = np.pad(
+                    self.template,
+                    pad_width=(
+                        (int(kernel_h / 2), int(kernel_h / 2)),
+                        (int(kernel_w / 2), int(kernel_w / 2)),
+                    ),
+                    mode="constant",
+                    constant_values=1,
+                )
 
         print(f"RF: {self.template}")
 

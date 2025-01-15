@@ -13,7 +13,6 @@ class HandleFactory:
             "aten::convolution": ConvHandler(),
             "aten::max_pool2d_with_indices": MaxPoolHandler(),
             "aten::add": AddHandler(),
-            "aten::relu_": ActivationHandler(),
             "aten::relu": ActivationHandler(),
             "aten::gelu": ActivationHandler(),
             "aten::sigmoid": ActivationHandler(),

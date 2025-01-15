@@ -15,7 +15,7 @@ class MaxPoolHandler(OpHandler):
         stride_height, stride_width = args[2]
         input_height, input_width = input_tensor.shape[-2:]
         output_height, output_width = output[0].shape[-2:]
-        padding_height, padding_height = 0, 0
+        padding_height, padding_width = 0, 0
 
         if len(args) >= 4:
             padding_height, padding_width = args[3]
@@ -44,7 +44,7 @@ class MaxPoolHandler(OpHandler):
                     if 0 <= h_in < input_height:
                         for kw in range(kernel_width):
                             w_in = w_start + kw
-                            if 0 <= w_in < output_width:
+                            if 0 <= w_in < input_width:
                                 index = (h_start + kh) * input_width + (w_start + kw)
                                 input_indices.append(index)
                 mapping[output_index] = input_indices

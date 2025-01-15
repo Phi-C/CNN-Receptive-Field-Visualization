@@ -4,7 +4,7 @@ from cnnrfvis.log import logger, setup_logging
 from cnnrfvis.ops.factory import HandleFactory
 
 setup_logging(log_file="app.log")
-SKIP_LIST = ["aten::detach"]
+SKIP_LIST = ["aten::detach", "aten::empty"]
 
 
 class CatchEachOp(TorchDispatchMode):
@@ -43,19 +43,22 @@ class CatchEachOp(TorchDispatchMode):
         """
         op_name = func._schema.name
         logger.info(f"Operation: {op_name}::{self.layer_idx}")
+        op_name = op_name.rstrip("_")
         output = func(*args, **(kwargs or {}))
 
         if self.flag == False:
             return output
 
-        if op_name == "aten::view":
+        # TODO: stop_op is model-dependent
+        if op_name == "aten::view" or op_name == "aten::mean":
             self.flag = False
             return output
 
         if op_name in SKIP_LIST:
             input_tensor = args[0][0] if isinstance(args[0], tuple) else args[0]
             output_tensor = output[0] if isinstance(output, tuple) else output
-            output_tensor.rf_dict = input_tensor.rf_dict
+            if hasattr(input_tensor, "rf_dict"):
+                output_tensor.rf_dict = input_tensor.rf_dict
             self.layer_idx += 1
             return output
 
@@ -108,7 +111,10 @@ class CatchEachOp(TorchDispatchMode):
         return rf_dict
 
     def _update_output(self, op_name, output, rf_dict):
-        if op_name == "aten::max_pool2d_with_indices":
+        if (
+            op_name == "aten::max_pool2d_with_indices"
+            or op_name == "aten::native_batch_norm"
+        ):
             output[0].rf_dict = rf_dict
         else:
             output.rf_dict = rf_dict
