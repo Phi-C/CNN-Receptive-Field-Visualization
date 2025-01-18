@@ -4,7 +4,14 @@ from cnnrfvis.log import logger, setup_logging
 from cnnrfvis.ops.factory import HandleFactory
 
 setup_logging(log_file="app.log")
-SKIP_LIST = ["aten::detach", "aten::empty"]
+SKIP_LIST = [
+    "aten::detach",
+    "aten::empty",
+    "aten::slice",
+    "aten::unsqueeze",
+    "aten::split",
+    "aten::embedding",
+]
 
 
 class CatchEachOp(TorchDispatchMode):
@@ -18,7 +25,7 @@ class CatchEachOp(TorchDispatchMode):
     def __init__(self, verbose=True):
         super().__init__()
         self.verbose = verbose
-        self.flag = True
+        self.flag = False
         self.layer_idx = 0
         self.rf_dict = {}
         self.hw_dict = {}
@@ -46,6 +53,11 @@ class CatchEachOp(TorchDispatchMode):
         op_name = op_name.rstrip("_")
         output = func(*args, **(kwargs or {}))
 
+        # if op_name == "aten::slice" or op_name == "aten::unsqueeze":
+        #     print(args[0].shape, output.shape)
+        if op_name == "aten::convolution" or op_name == "aten::pool":
+            self.flag = True
+
         if self.flag == False:
             return output
 
@@ -54,15 +66,42 @@ class CatchEachOp(TorchDispatchMode):
             self.flag = False
             return output
 
+        if (
+            (op_name == "aten::slice")
+            and (args[1] == (len(args[0].shape) - 1))
+            and (args[2] > 0 or args[3] < args[0].shape[-1])
+        ):
+            # remapping
+            input_tensor = args[0]
+            if hasattr(input_tensor, "rf_dict"):
+                in_w = args[0].shape[-1]
+                out_h = args[0].shape[-2]
+                out_w = args[3] - args[2]
+                rf_dict = {}
+                for h in range(out_h):
+                    for w in range(out_w):
+                        rf_dict[h * out_w + w] = input_tensor.rf_dict[
+                            h * in_w + w + args[2]
+                        ]
+                output.rf_dict = rf_dict
+                self.layer_idx += 1
+            return output
+
         if op_name in SKIP_LIST:
             input_tensor = args[0][0] if isinstance(args[0], tuple) else args[0]
             output_tensor = output[0] if isinstance(output, tuple) else output
             if hasattr(input_tensor, "rf_dict"):
-                output_tensor.rf_dict = input_tensor.rf_dict
+                if isinstance(output_tensor, list) or isinstance(output_tensor, tuple):
+                    for item in output_tensor:
+                        item.rf_dict = input_tensor.rf_dict
+                else:
+                    output_tensor.rf_dict = input_tensor.rf_dict
             self.layer_idx += 1
             return output
 
-        if self.layer_idx == 0:
+        # TODO: Check
+        # if self.layer_idx == 0:
+        if not hasattr(args[0], "rf_dict"):
             input_tensor = args[0]
             input_height, input_width = input_tensor.shape[-2:]
             self.input_height = input_height
@@ -76,11 +115,11 @@ class CatchEachOp(TorchDispatchMode):
                     input_rf_dict[i * input_width + j][i, j] = 1
             input_tensor.rf_dict = input_rf_dict
 
-        # index_mapping = self._map_feature_map(op_name, args, output)
         if op_name not in self.handlers:
             raise NotImplementedError(f"Operation {op_name} not supported")
         index_mapping = self.handlers[op_name].handle(args, output)
-        rf_dict = self._compute_rf_tensor(args, index_mapping)
+        rf_dict = self.handlers[op_name].compute_rf_tensor(args, index_mapping)
+
         self.rf_dict[f"{op_name}::{self.layer_idx}"] = rf_dict
         output = self._update_output(op_name, output, rf_dict)
         output_tensor = output[0] if isinstance(output, tuple) else output
@@ -88,6 +127,7 @@ class CatchEachOp(TorchDispatchMode):
         self.hw_dict[f"{op_name}::{self.layer_idx}"] = (output_height, output_width)
         self.layer_idx += 1
 
+        # Used for debug
         if self.verbose:
             middel_index = output_height // 2 * output_width + output_width // 2
             first_row, last_row, first_col, last_col = self._find_nonzero_bounds(
@@ -96,19 +136,10 @@ class CatchEachOp(TorchDispatchMode):
             logger.info(
                 f"Layer {self.layer_idx}: {op_name}, RF: {output_tensor.rf_dict[middel_index][first_row:last_row+1, first_col:last_col+1]}, RF Shape: {output_tensor.rf_dict[middel_index][first_row:last_row+1, first_col:last_col+1].shape}"
             )
+            torch.save(
+                output_tensor.rf_dict[164], f"debug/{op_name}::{self.layer_idx}.pt"
+            )
         return output
-
-    def _compute_rf_tensor(self, args, index_mapping):
-        input_tensor = args[0]
-        assert hasattr(input_tensor, "rf_dict"), "Input tensor should have rf_dict"
-
-        rf_dict = {}
-        for output_index, input_indices in index_mapping.items():
-            rf_tensor = torch.zeros_like(input_tensor.rf_dict[0])
-            for input_index in input_indices:
-                rf_tensor += input_tensor.rf_dict[input_index]
-            rf_dict[output_index] = rf_tensor
-        return rf_dict
 
     def _update_output(self, op_name, output, rf_dict):
         if (

@@ -29,6 +29,7 @@ class MaxPoolHandler(OpHandler):
             == (input_width + 2 * padding_width - kernel_width) // stride_width + 1
         ), f"MaxPool width mismatch: {input_width}, {output_width}, {stride_width}, {kernel_width}"
 
+        # TODO: Check, Example: SimpleCNN 
         mapping = {}
         for h_out in range(output_height):
             for w_out in range(output_width):

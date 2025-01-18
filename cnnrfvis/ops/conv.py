@@ -44,6 +44,8 @@ class ConvHandler(OpHandler):
                             w_in = w_start + kw
                             if 0 <= w_in < input_width:
                                 index = h_in * input_width + w_in
+                                if weight[0, 0, kh, kw] == 0:
+                                    continue
                                 input_indices.append(index)
                 output_index = h_out * output_width + w_out
                 mapping[output_index] = input_indices

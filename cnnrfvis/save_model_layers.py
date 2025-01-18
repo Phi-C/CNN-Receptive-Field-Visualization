@@ -14,14 +14,17 @@ import os
 import pickle
 from collections import defaultdict
 from cnnrfvis.models.SimpleCNN import get_model_rf_info
+
+# TODO: refact
 from cnnrfvis.models.SimpleStrideCNN import get_simple_stride_cnn_rf_info
 from cnnrfvis.models.resnet import get_resnet18_rf_info
+from cnnrfvis.models.PixelCNN import get_pixelcnn_rf_info
 
 FUNC_DICT = {
     "SimpleCNN": get_model_rf_info,
     "SimpleStrideCNN": get_simple_stride_cnn_rf_info,
-    # TODO: for resnet18, vis_info.pickle is 19G, which is out of streamlit web‘s ability
     "resnet": get_resnet18_rf_info,
+    "PixelCNN": get_pixelcnn_rf_info,
 }
 
 
@@ -37,7 +40,6 @@ def save_model_and_layers(model_file: str) -> None:
         model_layers_dict[model_name].append(k)
 
     meta_info["model_layers_dict"] = model_layers_dict
-    # vis_info["rf_dict"] = results.rf_dict
     meta_info["hw_dict"] = results.hw_dict
     meta_info["input_hw"] = [results.input_height, results.input_width]
     os.system(f"mkdir -p {model_name}")

@@ -15,6 +15,8 @@ def weights_init(m):
 
 
 class GatedActivation(nn.Module):
+    """ From https://github.com/MishaLaskin/vqvae/blob/master/pixelcnn/models.py
+    """
     def __init__(self):
         super().__init__()
 
@@ -124,15 +126,19 @@ class GatedPixelCNN(nn.Module):
         return x
 
 
-if __name__ == "__main__":
+def get_pixelcnn_rf_info():
     n_embeddings = 512
     img_dim = 8
     n_layers = 15
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = GatedPixelCNN(n_embeddings, img_dim**2, n_layers).to(device)
-    print(model)
     input = torch.randint(1, 510, (2, 32, 32)).long()
     label = torch.tensor([2], dtype=int)
 
-    with CatchEachOp(verbose=False):
+    with CatchEachOp(verbose=False) as results, torch.no_grad():
         model(input, label)
+        return results
+
+
+if __name__ == "__main__":
+    get_pixelcnn_rf_info()
