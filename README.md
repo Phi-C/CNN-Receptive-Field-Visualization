@@ -3,8 +3,11 @@ Receptive Field Visualizer: Make receptive fields of CNN  models more clear. And
 
 ## Supported Models
 ✅ resnet18
+
 ✅ pixelcnn
+
 ✅ toy models (SimpleCNN && SimpleStrideCNN)
+
 ⏳ MobileNet [TODO]
 
 ## Quick Start
