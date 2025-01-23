@@ -1,10 +1,40 @@
 # CNN-Receptive-Field-Visualization
-Tools: visualize CNN recptive field for better model design
+Receptive Field Visualizer: Make receptive fields of CNN  models more clear. And it is helpful to design your own model architecture.
 
+## Supported Models
+✅ resnet18
+✅ pixelcnn
+✅ toy models (SimpleCNN && SimpleStrideCNN)
+⏳ MobileNet [TODO]
 
-# Quick Start
+## Quick Start
+
+### Usage
 ```shell
-pip install .
-cnnrfvis --conv_file tests/conv_list.txt --layer_idx 2 
+git clone https://github.com/Phi-C/CNN-Receptive-Field-Visualization.git
+pip install -r requirements.txt
+
+cd cnnrfvis
+
+# Trace your model and save receptive field info
+python save_model_layers.py models/PixelCNN.py
+
+# Visualize receptive fields
+streamlit run web.py 
 ```
-text file must organized as following: `(kernel_size_h, kernel_size_w)  (stride_h, stride_w)  (pad_h, pad_w)` 
+### Custom Models
+If you want to visualize your own vision model, take following steps:
+1. Put your model architecture code in `cnnrfvis/models/{model_name}.py`
+2. Add `get_{model_name}_rf_info` function in `cnnrfvis/model/{model_name}.py` 
+3. Add `from cnnrfvis.models.{model_name} import get_{model_name}_rf_info` in `save_model_layers.py`
+
+## Visualization Example
+Take PixelCNN for example, after `streamlit run web.py` is runned, you are directed to a web page.
+
+1. Choose your interested layer.
+2. Click `Visualize Receptive Field` button
+3. Put your mouse on some pixel on feature map(left)
+
+Then you will see the corresponding receptive fields on the input image.
+
+![Example](assets/CNNRFVis.png)
