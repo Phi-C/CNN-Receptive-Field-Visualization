@@ -7,9 +7,9 @@
 
 <p align="center">
 
-**Receptive Field Visualizer: Make receptive fields of CNN  models more clear. And it is helpful to design your own model architecture.**
+**感受野可视化工具： 使卷积神经网络（CNN）模型的感受野更加清晰。它有助于设计您自己的模型架构。**
 
-## Supported Models
+## 支持模型列表
 ✅ resnet18
 
 ✅ pixelcnn
@@ -18,9 +18,9 @@
 
 ⏳ MobileNet [TODO]
 
-## Quick Start
+## 快速开始
 
-### Usage
+### 使用方法
 ```shell
 git clone https://github.com/Phi-C/CNN-Receptive-Field-Visualization.git
 pip install -r requirements.txt
@@ -33,19 +33,26 @@ python save_model_layers.py models/PixelCNN.py
 # Visualize receptive fields
 streamlit run web.py 
 ```
-### Custom Models
-If you want to visualize your own vision model, take following steps:
-1. Put your model architecture code in `cnnrfvis/models/{model_name}.py`
-2. Add `get_{model_name}_rf_info` function in `cnnrfvis/model/{model_name}.py` 
-3. Add `from cnnrfvis.models.{model_name} import get_{model_name}_rf_info` in `save_model_layers.py`
+### 自定义模型可视化
+如果您想可视化自己的视觉模型，请按照以下步骤操作：
 
-## Visualization Example
-Take PixelCNN for example, after `streamlit run web.py` is runned, you are directed to a web page.
+1. 将您的模型架构代码放入`cnnrfvis/models/{model_name}.py`文件中。
 
-1. Choose your interested layer.
-2. Click `Visualize Receptive Field` button
-3. Put your mouse on some pixel on feature map(left)
+2. 在`cnnrfvis/models/{model_name}.py`文件中添加`get_{model_name}_rf_info`函数。
 
-Then you will see the corresponding receptive fields on the input image.
+3. 在`save_model_layers.py`文件中添加`from cnnrfvis.models.{model_name} import get_{model_name}_rf_info`
+
+
+## 可视化样例
+以 PixelCNN 为例，运行 streamlit run web.py 后，您将被引导至一个网页。
+
+1. 选择您感兴趣的层。
+
+2. 点击 Visualize Receptive Field（可视化感受野）按钮。
+
+3. 将鼠标悬停在特征图（左侧）的某个像素上。
+
+随后，您将在输入图像上看到相应的感受野。
+
 
 ![Example](assets/CNNRFVis.png)
